@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0" version="26.0.13">
   <diagram name="Página-1" id="uDJ05HsRSzXK77CwW1Jx">
-    <mxGraphModel dx="2236" dy="1318" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="4024" dy="2372" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -9,9 +9,6 @@
         </mxCell>
         <mxCell id="rS4QHCmcO80jas_Lo0V3-2" value="Departamento de Desarrollo" style="swimlane;startSize=20;horizontal=0;html=1;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-1">
           <mxGeometry x="20" width="2004" height="500" as="geometry" />
-        </mxCell>
-        <mxCell id="rS4QHCmcO80jas_Lo0V3-5" value="&lt;div&gt;Apoyar el plan de carrera profesional&lt;/div&gt;&lt;div&gt;Retener y desarrollar el talento de los empleados&lt;/div&gt;&lt;div&gt;Debe realizar evaluaciones de desempeño, pruebas psicologicas, planes de formacion y capacitaciones&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-2">
-          <mxGeometry x="400" width="580" height="60" as="geometry" />
         </mxCell>
         <mxCell id="rS4QHCmcO80jas_Lo0V3-3" value="Centro de Operaciones de Seguridad (SOC)" style="swimlane;startSize=20;horizontal=0;html=1;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-1">
           <mxGeometry x="20" y="500" width="2004" height="500" as="geometry" />
@@ -110,9 +107,6 @@
         </mxCell>
         <mxCell id="rS4QHCmcO80jas_Lo0V3-4" value="Departamento de Recursos Humanos" style="swimlane;startSize=20;horizontal=0;html=1;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-1">
           <mxGeometry x="20" y="1000" width="2004" height="500" as="geometry" />
-        </mxCell>
-        <mxCell id="rS4QHCmcO80jas_Lo0V3-8" value="Diseñan e implementan soluciones de seguridad para proteger la organización&amp;nbsp; empleando ingenieros y arquitectos de seguridad" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-4">
-          <mxGeometry x="270" width="710" height="30" as="geometry" />
         </mxCell>
         <mxCell id="rS4QHCmcO80jas_Lo0V3-7" value="Centro Superior de Formación" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="198" y="1630" width="2000" height="300" as="geometry" />
