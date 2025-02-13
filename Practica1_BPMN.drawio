@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0" version="26.0.13">
   <diagram name="Página-1" id="uDJ05HsRSzXK77CwW1Jx">
-    <mxGraphModel dx="1909" dy="964" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1235" dy="624" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -111,6 +111,15 @@
         </mxCell>
         <mxCell id="xNy9P8nJW4BKSloSFsuw-16" value="Listado de formacion" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-44">
           <mxGeometry x="1186" y="210" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xNy9P8nJW4BKSloSFsuw-90" value="" style="points=[[0.25,0.25,0],[0.5,0,0],[0.75,0.25,0],[1,0.5,0],[0.75,0.75,0],[0.5,1,0],[0.25,0.75,0],[0,0.5,0]];shape=mxgraph.bpmn.gateway2;html=1;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;perimeter=rhombusPerimeter;outlineConnect=0;outline=none;symbol=none;gwType=parallel;" vertex="1" parent="rS4QHCmcO80jas_Lo0V3-44">
+          <mxGeometry x="1316" y="101.5" width="34" height="37" as="geometry" />
+        </mxCell>
+        <mxCell id="xNy9P8nJW4BKSloSFsuw-91" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="rS4QHCmcO80jas_Lo0V3-44" source="rS4QHCmcO80jas_Lo0V3-33" target="xNy9P8nJW4BKSloSFsuw-90">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xNy9P8nJW4BKSloSFsuw-92" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="rS4QHCmcO80jas_Lo0V3-44" source="rS4QHCmcO80jas_Lo0V3-30" target="xNy9P8nJW4BKSloSFsuw-90">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="rS4QHCmcO80jas_Lo0V3-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" parent="rS4QHCmcO80jas_Lo0V3-3" source="rS4QHCmcO80jas_Lo0V3-17" target="rS4QHCmcO80jas_Lo0V3-21" edge="1">
           <mxGeometry relative="1" as="geometry">
