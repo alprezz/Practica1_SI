@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0" version="26.0.16">
   <diagram name="Página-1" id="uDJ05HsRSzXK77CwW1Jx">
-    <mxGraphModel dx="955" dy="1651" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="610" dy="1528" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -268,8 +268,8 @@
         <mxCell id="yh-kPCTtvAr-_X22sN1w-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" parent="rS4QHCmcO80jas_Lo0V3-44" source="yh-kPCTtvAr-_X22sN1w-8" target="yh-kPCTtvAr-_X22sN1w-29" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="yh-kPCTtvAr-_X22sN1w-39" value="Aprovado" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="rS4QHCmcO80jas_Lo0V3-44" vertex="1">
-          <mxGeometry x="2070" y="40" width="70" height="30" as="geometry" />
+        <mxCell id="yh-kPCTtvAr-_X22sN1w-39" value="Aprobado" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="rS4QHCmcO80jas_Lo0V3-44" vertex="1">
+          <mxGeometry x="2065" y="40" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="yh-kPCTtvAr-_X22sN1w-62" value="" style="points=[[0.25,0.25,0],[0.5,0,0],[0.75,0.25,0],[1,0.5,0],[0.75,0.75,0],[0.5,1,0],[0.25,0.75,0],[0,0.5,0]];shape=mxgraph.bpmn.gateway2;html=1;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;perimeter=rhombusPerimeter;outlineConnect=0;outline=standard;symbol=timer;" parent="rS4QHCmcO80jas_Lo0V3-44" vertex="1">
           <mxGeometry x="3110" y="95" width="50" height="50" as="geometry" />
