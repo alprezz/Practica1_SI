@@ -4,6 +4,8 @@ from etl_process import run_etl, DB_NAME
 import os
 import sqlite3
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 app = Flask(__name__)
 
@@ -93,6 +95,225 @@ def calculate_metrics():
         metrics['fraude_contacts_max']    = 0
 
     return metrics
+
+def get_empleados_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_emp, nombre, nivel FROM empleado", conn)
+    conn.close()
+    return df
+
+def get_clientes_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
+    conn.close()
+    return df
+
+# 4. Agrupaciones Fraude
+def calculate_fraude_groupings():
+    """
+    Filtra los incidentes de tipo_incidencia = 5 (Fraude) y
+    agrupa por:
+      - Empleado
+      - Nivel de empleado
+      - Cliente
+      - Día de la semana (fecha_contacto)
+    Para cada grupo calcula:
+      - Nº de incidentes (tickets)
+      - Nº total de contactos
+      - Estadísticas (# contactos por ticket): mediana, media, varianza, min, max
+    """
+    df = get_full_tickets_df()
+
+    # Solo Fraude
+    df_fraude = df[df['id_inci'] == 5].copy()
+    if df_fraude.empty:
+        # Si no hay ningún ticket de Fraude, devolvemos dict vacío
+        return {
+            'by_employee': [],
+            'by_level': [],
+            'by_client': [],
+            'by_weekday': []
+        }
+
+    # Día de la semana
+    df_fraude['weekday'] = df_fraude['fecha_contacto'].dt.day_name().fillna('Desconocido')
+
+    # Unimos nivel de empleado
+    emp_df = get_empleados_df()[['id_emp','nivel','nombre']]
+    df_fraude = df_fraude.merge(emp_df, on='id_emp', how='left')
+
+    # 1) Por Empleado (id_emp)
+    by_employee = do_fraude_stats_by_dimension(df_fraude, 'id_emp')
+    # Mapeamos el ID a su nombre
+    emp_dict = dict(zip(emp_df['id_emp'], emp_df['nombre']))
+    for row in by_employee:
+        emp_id = row['group_value']
+        row['group_value'] = emp_dict.get(emp_id, f"Emp {emp_id}")
+
+    # 2) Por Nivel
+    by_level = do_fraude_stats_by_dimension(df_fraude, 'nivel')
+    # (El 'group_value' ya es 1,2,3, no hace falta mapear)
+
+    # 3) Por Cliente
+    by_client = do_fraude_stats_by_dimension(df_fraude, 'id_cliente')
+    # Mapeamos ID cliente -> nombre
+    cli_df = get_clientes_df()
+    cli_dict = dict(zip(cli_df['id_cliente'], cli_df['nombre']))
+    for row in by_client:
+        cid = row['group_value']
+        row['group_value'] = cli_dict.get(cid, f"Cliente {cid}")
+
+    # 4) Por día de la semana
+    by_weekday = do_fraude_stats_by_dimension(df_fraude, 'weekday')
+    # No hace falta mapear, 'weekday' ya es un string
+
+    return {
+        'by_employee': by_employee,
+        'by_level': by_level,
+        'by_client': by_client,
+        'by_weekday': by_weekday
+    }
+
+def do_fraude_stats_by_dimension(df_fraude, group_col):
+    """
+    Agrupa df_fraude por [group_col, id_ticket], calcula cuántos contactos
+    hay en cada ticket. Luego, para cada valor en group_col, se obtienen:
+      - num_incidents: nº de tickets
+      - total_contacts: suma total de contactos
+      - median_contacts, mean_contacts, var_contacts, min_contacts, max_contacts
+        (sobre la distribución de "contactos por ticket")
+    Retorna una lista de dict con dichas estadísticas.
+    """
+    # Agrupamos por [group_col, id_ticket] y contamos filas => # contactos
+    grouped = df_fraude.groupby([group_col, 'id_ticket']).size().reset_index(name='num_contacts')
+
+    results = []
+    for group_value, subdf in grouped.groupby(group_col):
+        dist = subdf['num_contacts']  # Serie con el # de contactos por ticket
+        num_incidents = len(dist)     # Nº de tickets (cada fila = un ticket)
+        total_contacts = dist.sum()   # Suma total de contactos
+        median_val = dist.median()
+        mean_val = dist.mean()
+        var_val = dist.var() if len(dist) > 1 else 0
+        min_val = dist.min()
+        max_val = dist.max()
+
+        results.append({
+            'group_value': group_value,
+            'num_incidents': int(num_incidents),
+            'total_contacts': int(total_contacts),
+            'median_contacts': round(median_val, 2),
+            'mean_contacts': round(mean_val, 2),
+            'var_contacts': round(var_val, 2),
+            'min_contacts': int(min_val),
+            'max_contacts': int(max_val)
+        })
+
+    return results
+
+
+# 5. Generar gráficos
+def generate_charts():
+    df = get_full_tickets_df()
+    total_time_by_ticket = df.groupby('id_ticket')['tiempo'].sum().reset_index(name='total_tiempo')
+    tickets = df.drop_duplicates(subset=['id_ticket']).copy()
+    tickets = tickets.merge(total_time_by_ticket, on='id_ticket', how='left')
+
+    chart_folder = os.path.join('static', 'charts')
+    os.makedirs(chart_folder, exist_ok=True)
+
+    # Gráfico 1
+    group = tickets.groupby('es_mantenimiento')['duracion'].mean()
+    plt.figure()
+    group.plot(kind='bar', color=['#007bff','#ffc107'])
+    plt.title('Tiempo promedio (días) por mantenimiento')
+    plt.xlabel('Es Mantenimiento (0=No, 1=Sí)')
+    plt.ylabel('Tiempo Promedio (días)')
+    chart1_filename = 'charts/chart1.png'
+    chart1_path = os.path.join('static', chart1_filename)
+    plt.tight_layout()
+    plt.savefig(chart1_path)
+    plt.close()
+
+    # Gráfico 2
+    groups = tickets.groupby('id_inci')
+    box_data = []
+    labels = []
+    for tipo, df_tipo in groups:
+        box_data.append(df_tipo['duracion'].values)
+        labels.append(str(tipo))
+    plt.figure()
+    plt.boxplot(box_data, whis=[5, 90], labels=labels)
+    plt.title('Boxplot tiempos de resolución (por tipo_incidencia)')
+    plt.xlabel('Tipo de Incidencia')
+    plt.ylabel('Duración (días)')
+    chart2_filename = 'charts/chart2.png'
+    chart2_path = os.path.join('static', chart2_filename)
+    plt.tight_layout()
+    plt.savefig(chart2_path)
+    plt.close()
+
+    # Gráfico 3 (Top 5 clientes críticos)
+    crit_df = tickets[(tickets['es_mantenimiento'] == 1) & (tickets['id_inci'] != 1)]
+    crit_counts = crit_df.groupby('id_cliente').size().sort_values(ascending=False).head(5)
+    conn = sqlite3.connect(DB_NAME)
+    cli_df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
+    conn.close()
+    cli_dict = dict(zip(cli_df['id_cliente'], cli_df['nombre']))
+    crit_counts.index = crit_counts.index.map(lambda x: cli_dict.get(x, f"Cliente {x}"))
+    plt.figure()
+    crit_counts.plot(kind='bar', color='#dc3545')
+    plt.title('Top 5 clientes críticos')
+    plt.xlabel('Cliente')
+    plt.ylabel('Nº incidencias críticas')
+    chart3_filename = 'charts/chart3.png'
+    chart3_path = os.path.join('static', chart3_filename)
+    plt.tight_layout()
+    plt.savefig(chart3_path)
+    plt.close()
+
+    # Gráfico 4 (Actuaciones por empleado)
+    emp_contact_counts = df[df['id_emp'].notna()].groupby('id_emp').size()
+    conn = sqlite3.connect(DB_NAME)
+    emp_df = pd.read_sql_query("SELECT id_emp, nombre FROM empleado", conn)
+    conn.close()
+    emp_dict = dict(zip(emp_df['id_emp'], emp_df['nombre']))
+    emp_contact_counts.index = emp_contact_counts.index.map(lambda x: emp_dict.get(x, f"Emp {x}"))
+    plt.figure()
+    emp_contact_counts.plot(kind='bar', color='#17a2b8')
+    plt.title('Total actuaciones por empleado')
+    plt.xlabel('Empleado')
+    plt.ylabel('Nº actuaciones')
+    chart4_filename = 'charts/chart4.png'
+    chart4_path = os.path.join('static', chart4_filename)
+    plt.tight_layout()
+    plt.savefig(chart4_path)
+    plt.close()
+
+    # Gráfico 5 (Actuaciones por día de la semana)
+    df['weekday'] = df['fecha_contacto'].dt.day_name()
+    weekday_counts = df['weekday'].value_counts()
+    order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
+    weekday_counts = weekday_counts.reindex(order).dropna()
+    plt.figure()
+    weekday_counts.plot(kind='bar', color='#6f42c1')
+    plt.title('Actuaciones por día de la semana')
+    plt.xlabel('Día')
+    plt.ylabel('Nº actuaciones')
+    chart5_filename = 'charts/chart5.png'
+    chart5_path = os.path.join('static', chart5_filename)
+    plt.tight_layout()
+    plt.savefig(chart5_path)
+    plt.close()
+
+    return {
+        'chart1': chart1_filename,
+        'chart2': chart2_filename,
+        'chart3': chart3_filename,
+        'chart4': chart4_filename,
+        'chart5': chart5_filename
+    }
+
 
 
 @app.route('/')
