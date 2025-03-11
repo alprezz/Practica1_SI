@@ -49,6 +49,20 @@ def get_full_tickets_df():
     df['tiempo'] = df['tiempo'].fillna(0).astype(float)
     return df
 
+def get_empleados_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_emp, nombre, nivel FROM empleado", conn)
+    conn.close()
+    return df
+
+def get_clientes_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
+    conn.close()
+    return df
+
+
+# 3. Cálculo de métricas generales
 def calculate_metrics():
     df = get_full_tickets_df()
 
@@ -338,6 +352,26 @@ def add_incidente():
         # Recogemos datos del contacto
         id_emp = request.form.get('id_emp')
         fecha_contacto = request.form.get('fecha_contacto')
+        tiempo_contacto = float(request.form.get('tiempo_contacto', 0))
+
+        # Insertar en la BD
+        conn = sqlite3.connect(DB_NAME)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO incidencia_ticket
+            (fecha_apertura, fecha_cierre, es_mantenimiento, satisfaccion_cliente, id_inci, id_cliente)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (fecha_apertura, fecha_cierre, es_mant, satisfaccion, tipo_inci, cliente))
+        id_ticket = cur.lastrowid
+
+        # Insertar contacto
+        cur.execute("""
+            INSERT INTO contacto (id_ticket, id_emp, fecha, tiempo)
+            VALUES (?, ?, ?, ?)
+        """, (id_ticket, id_emp, fecha_contacto, tiempo_contacto))
+
+        conn.commit()
+        conn.close()
 
         return redirect(url_for('index'))
     else:
