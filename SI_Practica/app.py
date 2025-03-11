@@ -1,21 +1,28 @@
-from flask import Flask
-from etl_process import run_etl, DB_NAME
-
 import os
 import sqlite3
 import pandas as pd
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from flask import Flask, render_template, request, redirect, url_for
+from etl_process import run_etl, DB_NAME
 
 app = Flask(__name__)
 
 
-
+# 1. Inicialización ETL
 if not os.path.exists(DB_NAME):
     run_etl("datos.json")
 
-# Retorna la información de tickets y contactos.
+
+# 2. Funciones
 def get_full_tickets_df():
+    """
+    Retorna un DataFrame con la información de tickets + contactos (JOIN).
+    Cada fila corresponde a un contacto de un ticket.
+    """
     conn = sqlite3.connect(DB_NAME)
     query = """
         SELECT 
@@ -95,18 +102,6 @@ def calculate_metrics():
         metrics['fraude_contacts_max']    = 0
 
     return metrics
-
-def get_empleados_df():
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id_emp, nombre, nivel FROM empleado", conn)
-    conn.close()
-    return df
-
-def get_clientes_df():
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
-    conn.close()
-    return df
 
 # 4. Agrupaciones Fraude
 def calculate_fraude_groupings():
@@ -315,11 +310,47 @@ def generate_charts():
     }
 
 
-
+# 6. Rutas Flask
 @app.route('/')
-def hello_world():  # put application's code here
-    return 'Hello World!'
+def index():
+    metrics = calculate_metrics()
+    charts = generate_charts()
 
+    # NUEVO: cálculo de agrupaciones para Fraude
+    fraude_groupings = calculate_fraude_groupings()
+
+    return render_template('index.html',
+                           metrics=metrics,
+                           charts=charts,
+                           fraude_groupings=fraude_groupings)
+
+@app.route('/add_incidente', methods=['GET','POST'])
+def add_incidente():
+    if request.method == 'POST':
+        # Recogemos datos del incidente
+        cliente = request.form.get('cliente')
+        fecha_apertura = request.form.get('fecha_apertura')
+        fecha_cierre   = request.form.get('fecha_cierre')
+        es_mant = 1 if request.form.get('es_mantenimiento') == 'true' else 0
+        satisfaccion = int(request.form.get('satisfaccion_cliente'))
+        tipo_inci = request.form.get('tipo_incidencia')
+
+        # Recogemos datos del contacto
+        id_emp = request.form.get('id_emp')
+        fecha_contacto = request.form.get('fecha_contacto')
+
+        return redirect(url_for('index'))
+    else:
+        conn = sqlite3.connect(DB_NAME)
+        clientes = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn).to_dict('records')
+        tipos = pd.read_sql_query("SELECT id_inci, nombre FROM tipo_incidencia", conn).to_dict('records')
+        empleados = pd.read_sql_query("SELECT id_emp, nombre FROM empleado", conn).to_dict('records')
+        conn.close()
+
+        return render_template('add_incidente.html',
+                               clientes=clientes,
+                               tipos_incidentes=tipos,
+                               empleados=empleados)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
