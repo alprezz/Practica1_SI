@@ -1,10 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="utf-8">
+    <title>Añadir Incidente</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
+<div class="container mt-4">
+    <h1 class="mb-3">Añadir Incidente</h1>
+    <form method="post">
+        <!-- DATOS DEL INCIDENTE -->
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="cliente">Cliente</label>
+                <select class="form-control" id="cliente" name="cliente">
+                    {% for cli in clientes %}
+                    <option value="{{ cli.id_cliente }}">{{ cli.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="tipo_incidencia">Tipo de Incidencia</label>
+                <select class="form-control" id="tipo_incidencia" name="tipo_incidencia">
+                    {% for tipo in tipos_incidentes %}
+                    <option value="{{ tipo.id_inci }}">{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="es_mantenimiento">¿Mantenimiento?</label>
+                <select class="form-control" id="es_mantenimiento" name="es_mantenimiento">
+                    <option value="true">Sí</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+        </div>
 
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="fecha_apertura">Fecha de Apertura</label>
+                <input type="date" class="form-control" id="fecha_apertura" name="fecha_apertura" required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="fecha_cierre">Fecha de Cierre</label>
+                <input type="date" class="form-control" id="fecha_cierre" name="fecha_cierre" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="satisfaccion_cliente">Satisfacción del Cliente (1-10)</label>
+            <input type="number" class="form-control" id="satisfaccion_cliente"
+                   name="satisfaccion_cliente" min="1" max="10" required>
+        </div>
+
+        <hr>
+
+        <!-- DATOS DEL CONTACTO/EMPLEADO ASOCIADO -->
+        <h4>Primer Contacto con Empleado</h4>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="id_emp">Empleado</label>
+                <select class="form-control" id="id_emp" name="id_emp">
+                    {% for emp in empleados %}
+                    <option value="{{ emp.id_emp }}">{{ emp.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="fecha_contacto">Fecha del Contacto</label>
+                <input type="date" class="form-control" id="fecha_contacto" name="fecha_contacto" required>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="tiempo_contacto">Tiempo (horas)</label>
+                <input type="number" step="0.1" class="form-control" id="tiempo_contacto" name="tiempo_contacto" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
 </body>
 </html>
