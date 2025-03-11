@@ -1,8 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="utf-8">
+    <title>Dashboard de Incidentes</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Iconos de Font Awesome (opcional) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Nuestro CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+<!-- Barra de navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Dashboard de Incidentes</a>
+    <div class="ml-auto mr-3">
+        <!-- Botón para añadir incidente -->
+        <a href="{{ url_for('add_incidente') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Añadir Incidente
+        </a>
+    </div>
+</nav>
+
+<div class="container-fluid my-4">
+    <div class="row">
+        <div class="col">
+            <h1 class="display-5">Vista general de métricas y gráficos</h1>
+            <p class="text-muted">Análisis de incidencias, horas y actuaciones</p>
+        </div>
+    </div>
+
+    <!-- MÉTRICAS en tarjetas (cards) -->
+    <div class="row">
+        <!-- Card: Incidencias Totales -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-bug"></i> Incidencias Totales
+                    </h5>
+                    <p class="display-4 mb-0">{{ metrics.total_tickets }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Satisfacción ≥ 5 (media) -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-smile"></i> Satisf. ≥ 5 (media)
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incidents_satisfied_mean }}
+                        <small class="text-muted">± {{ metrics.incidents_satisfied_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Incidencias/cliente -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-users"></i> Incidencias/cliente
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incidents_per_client_mean }}
+                        <small class="text-muted">± {{ metrics.incidents_per_client_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Tiempo total (hrs) -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-clock"></i> Tiempo total (hrs)
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incident_total_time_mean }}
+                        <small class="text-muted">± {{ metrics.incident_total_time_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda fila de tarjetas -->
+    <div class="row">
+        <!-- Card: Horas Empleados -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-user-cog"></i> Horas Empleados
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.employee_time_min }}</p>
+                    <p class="mb-0">Max: {{ metrics.employee_time_max }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Duración Incidencias -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-hourglass-half"></i> Duración Incidencias
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.resolution_time_min }} días</p>
+                    <p class="mb-0">Max: {{ metrics.resolution_time_max }} días</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Inc. por empleado -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-people-carry"></i> Inc. por empleado
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.employee_incidents_min }}</p>
+                    <p class="mb-0">Max: {{ metrics.employee_incidents_max }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Fraude -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-exclamation-triangle"></i> Fraude
+                    </h5>
+                    <p class="mb-1">Incidencias: {{ metrics.fraude_ticket_count }}</p>
+                    <p class="mb-1">Media acts: {{ metrics.fraude_contacts_mean }}</p>
+                    <p class="mb-1">Mediana: {{ metrics.fraude_contacts_median }}</p>
+                    <p class="mb-1">Var: {{ metrics.fraude_contacts_var }}</p>
+                    <p class="mb-0">Mín: {{ metrics.fraude_contacts_min }}, Máx: {{ metrics.fraude_contacts_max }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mt-5">Fraude - Análisis por Agrupaciones</h2>
+    <p>Mostramos las estadísticas de los incidentes de tipo Fraude (id_inci = 5), agrupados por empleado, nivel, cliente y día de la semana.</p>
 </head>
 <body>
 
