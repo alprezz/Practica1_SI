@@ -151,8 +151,157 @@
 
     <h2 class="mt-5">Fraude - Análisis por Agrupaciones</h2>
     <p>Mostramos las estadísticas de los incidentes de tipo Fraude (id_inci = 5), agrupados por empleado, nivel, cliente y día de la semana.</p>
-</head>
-<body>
 
-</body>
-</html>
+    <!-- Por Empleado -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Empleado</h5>
+            {% if fraude_groupings.by_employee %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Incidentes</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_employee %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No se han registrado incidentes de Fraude.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Nivel de empleado -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Nivel de Empleado</h5>
+            {% if fraude_groupings.by_level %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Nivel</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_level %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por nivel.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Cliente -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Cliente</h5>
+            {% if fraude_groupings.by_client %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_client %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por cliente.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Día de la semana -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Día de la Semana</h5>
+            {% if fraude_groupings.by_weekday %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Día</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_weekday %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por día de la semana.</p>
+            {% endif %}
+        </div>
+    </div>
