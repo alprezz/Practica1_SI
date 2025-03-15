@@ -12,16 +12,14 @@ from etl_process import run_etl, DB_NAME
 app = Flask(__name__)
 
 
-# 1. Inicialización ETL
+# Inicialización ETL
 if not os.path.exists(DB_NAME):
     run_etl("datos.json")
 
 
-# 2. Funciones
 def get_full_tickets_df():
     """
-    Retorna un DataFrame con la información de tickets + contactos (JOIN).
-    Cada fila corresponde a un contacto de un ticket.
+    Retorna un DataFrame con la información de tickets + contactos.
     """
     conn = sqlite3.connect(DB_NAME)
     query = """
@@ -62,7 +60,7 @@ def get_clientes_df():
     return df
 
 
-# 3. Cálculo de métricas generales
+# Cálculo de métricas generales
 def calculate_metrics():
     df = get_full_tickets_df()
 
@@ -117,11 +115,10 @@ def calculate_metrics():
 
     return metrics
 
-# 4. Agrupaciones Fraude
+# Agrupaciones Fraude
 def calculate_fraude_groupings():
     """
-    Filtra los incidentes de tipo_incidencia = 5 (Fraude) y
-    agrupa por:
+    Filtra los incidentes de tipo_incidencia = 5 y agrupa por:
       - Empleado
       - Nivel de empleado
       - Cliente
@@ -151,7 +148,7 @@ def calculate_fraude_groupings():
     emp_df = get_empleados_df()[['id_emp','nivel','nombre']]
     df_fraude = df_fraude.merge(emp_df, on='id_emp', how='left')
 
-    # 1) Por Empleado (id_emp)
+    # Por Empleado (id_emp)
     by_employee = do_fraude_stats_by_dimension(df_fraude, 'id_emp')
     # Mapeamos el ID a su nombre
     emp_dict = dict(zip(emp_df['id_emp'], emp_df['nombre']))
@@ -159,11 +156,11 @@ def calculate_fraude_groupings():
         emp_id = row['group_value']
         row['group_value'] = emp_dict.get(emp_id, f"Emp {emp_id}")
 
-    # 2) Por Nivel
+    # Por Nivel
     by_level = do_fraude_stats_by_dimension(df_fraude, 'nivel')
     # (El 'group_value' ya es 1,2,3, no hace falta mapear)
 
-    # 3) Por Cliente
+    # Por Cliente
     by_client = do_fraude_stats_by_dimension(df_fraude, 'id_cliente')
     # Mapeamos ID cliente -> nombre
     cli_df = get_clientes_df()
@@ -172,9 +169,8 @@ def calculate_fraude_groupings():
         cid = row['group_value']
         row['group_value'] = cli_dict.get(cid, f"Cliente {cid}")
 
-    # 4) Por día de la semana
+    # Por día de la semana
     by_weekday = do_fraude_stats_by_dimension(df_fraude, 'weekday')
-    # No hace falta mapear, 'weekday' ya es un string
 
     return {
         'by_employee': by_employee,
@@ -184,15 +180,7 @@ def calculate_fraude_groupings():
     }
 
 def do_fraude_stats_by_dimension(df_fraude, group_col):
-    """
-    Agrupa df_fraude por [group_col, id_ticket], calcula cuántos contactos
-    hay en cada ticket. Luego, para cada valor en group_col, se obtienen:
-      - num_incidents: nº de tickets
-      - total_contacts: suma total de contactos
-      - median_contacts, mean_contacts, var_contacts, min_contacts, max_contacts
-        (sobre la distribución de "contactos por ticket")
-    Retorna una lista de dict con dichas estadísticas.
-    """
+
     # Agrupamos por [group_col, id_ticket] y contamos filas => # contactos
     grouped = df_fraude.groupby([group_col, 'id_ticket']).size().reset_index(name='num_contacts')
 
@@ -221,7 +209,7 @@ def do_fraude_stats_by_dimension(df_fraude, group_col):
     return results
 
 
-# 5. Generar gráficos
+# Generar gráficos
 def generate_charts():
     df = get_full_tickets_df()
     total_time_by_ticket = df.groupby('id_ticket')['tiempo'].sum().reset_index(name='total_tiempo')
@@ -324,7 +312,7 @@ def generate_charts():
     }
 
 
-# 6. Rutas Flask
+# Rutas Flask
 @app.route('/')
 def index():
     metrics = calculate_metrics()
