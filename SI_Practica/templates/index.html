@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <title>Dashboard de Incidentes</title>
@@ -13,9 +13,15 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Dashboard de Incidentes</a>
     <div class="ml-auto mr-3">
-        <!-- Botón para añadir incidente -->
-        <a href="{{ url_for('add_incidente') }}" class="btn btn-primary">
+        <!-- Botones actualizados -->
+        <a href="{{ url_for('add_incidente') }}" class="btn btn-primary mr-2">
             <i class="fas fa-plus-circle"></i> Añadir Incidente
+        </a>
+        <a href="{{ url_for('top_clientes', x=5) }}" class="btn btn-info mr-2">
+            Top 5 Clientes
+        </a>
+        <a href="{{ url_for('top_tiempos_incidencias', x=5) }}" class="btn btn-info">
+            Top 5 Tipos Incidencia
         </a>
     </div>
 </nav>
@@ -359,9 +365,10 @@
         </div>
     </div>
 
-</div><
+</div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'928e93ed0df5bd0a',t:'MTc0MzQxMDgwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

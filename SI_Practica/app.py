@@ -362,6 +362,7 @@ def add_incidente():
         conn.close()
 
         return redirect(url_for('index'))
+
     else:
         conn = sqlite3.connect(DB_NAME)
         clientes = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn).to_dict('records')
@@ -373,6 +374,56 @@ def add_incidente():
                                clientes=clientes,
                                tipos_incidentes=tipos,
                                empleados=empleados)
+
+#PRACTICA 2
+@app.route('/top_clientes/<int:x>')
+def top_clientes(x):
+
+    df = get_full_tickets_df()
+
+    # Agrupar por cliente y contar incidencias
+    client_incidents = df.groupby('id_cliente').size().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de clientes
+    clients_df = get_clientes_df()
+    client_dict = dict(zip(clients_df['id_cliente'], clients_df['nombre']))
+    client_incidents.index = client_incidents.index.map(lambda x: client_dict.get(x, f"Cliente {x}"))
+
+    # Convertir a lista de diccionarios para la plantilla
+    top_clients_list = [
+        {'nombre': client_name, 'incidencias': int(count)}
+        for client_name, count in client_incidents.items()
+    ]
+
+    return render_template('top_clientes.html',
+                           top_clientes=top_clients_list,
+                           x=x)
+
+
+@app.route('/top_tiempos_incidencias/<int:x>')
+def top_tiempos_incidencias(x):
+
+    df = get_full_tickets_df()
+
+    # Calcular el tiempo promedio de resolución por tipo de incidencia
+    incident_times = df.groupby('id_inci')['duracion'].mean().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de tipos de incidencias
+    conn = sqlite3.connect(DB_NAME)
+    incident_types = pd.read_sql_query("SELECT id_inci, nombre FROM tipo_incidencia", conn)
+    conn.close()
+    incident_dict = dict(zip(incident_types['id_inci'], incident_types['nombre']))
+    incident_times.index = incident_times.index.map(lambda x: incident_dict.get(x, f"Tipo {x}"))
+
+    # Convertir a lista de diccionarios para la plantilla
+    top_incidents_list = [
+        {'tipo': incident_name, 'dias_promedio': round(time, 2)}
+        for incident_name, time in incident_times.items()
+    ]
+
+    return render_template('top_tiempos_incidencias.html',
+                           top_incidencias=top_incidents_list,
+                           x=x)
 
 if __name__ == '__main__':
     app.run(debug=True)
