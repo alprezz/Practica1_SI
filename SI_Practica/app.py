@@ -425,5 +425,55 @@ def top_tiempos_incidencias(x):
                            top_incidencias=top_incidents_list,
                            x=x)
 
+
+@app.route('/top_reportes/<int:x>', defaults={'mostrar_empleados': 'no'})
+@app.route('/top_reportes/<int:x>/<mostrar_empleados>')
+def top_reportes(x, mostrar_empleados):
+    """
+    Muestra el top X de clientes con más incidencias reportadas y, opcionalmente,
+    el top X de empleados con más tiempo empleado en resolución de incidencias
+    """
+    df = get_full_tickets_df()
+
+    # --- Top X Clientes con más incidencias ---
+    # Agrupar por cliente y contar incidencias
+    client_incidents = df.groupby('id_cliente').size().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de clientes
+    clients_df = get_clientes_df()
+    client_dict = dict(zip(clients_df['id_cliente'], clients_df['nombre']))
+    client_incidents.index = client_incidents.index.map(lambda x: client_dict.get(x, f"Cliente {x}"))
+
+    # Convertir a lista de diccionarios
+    top_clientes_list = [
+        {'nombre': client_name, 'incidencias': int(count)}
+        for client_name, count in client_incidents.items()
+    ]
+
+    # --- Top X Empleados con más tiempo (si se solicita) ---
+    top_empleados_list = None
+    if mostrar_empleados.lower() == 'si':
+        # Agrupar por empleado y sumar el tiempo total empleado (horas)
+        employee_times = df.groupby('id_empl')['horas'].sum().sort_values(ascending=False).head(x)
+
+        # Obtener nombres de empleados
+        conn = sqlite3.connect(DB_NAME)
+        employees_df = pd.read_sql_query("SELECT id_empl, nombre FROM empleados", conn)
+        conn.close()
+        employee_dict = dict(zip(employees_df['id_empl'], employees_df['nombre']))
+        employee_times.index = employee_times.index.map(lambda x: employee_dict.get(x, f"Empleado {x}"))
+
+        # Convertir a lista de diccionarios
+        top_empleados_list = [
+            {'nombre': emp_name, 'horas': round(hours, 2)}
+            for emp_name, hours in employee_times.items()
+        ]
+
+    return render_template('top_reportes.html',
+                           top_clientes=top_clientes_list,
+                           top_empleados=top_empleados_list,
+                           x=x,
+                           mostrar_empleados=(mostrar_empleados.lower() == 'si'))
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -13,15 +13,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Dashboard de Incidentes</a>
     <div class="ml-auto mr-3">
-        <!-- Botones actualizados -->
         <a href="{{ url_for('add_incidente') }}" class="btn btn-primary mr-2">
             <i class="fas fa-plus-circle"></i> Añadir Incidente
         </a>
-        <a href="{{ url_for('top_clientes', x=5) }}" class="btn btn-info mr-2">
-            Top 5 Clientes
-        </a>
-        <a href="{{ url_for('top_tiempos_incidencias', x=5) }}" class="btn btn-info">
-            Top 5 Tipos Incidencia
+        <a href="{{ url_for('top_reportes', x=5) }}" class="btn btn-info mr-2">
+            Top 5 Reportes
         </a>
     </div>
 </nav>
