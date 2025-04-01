@@ -1,0 +1,55 @@
+/* styles.css */
+
+/* Ajustes generales */
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+    margin: 0;
+    padding: 0;
+}
+
+/* Ajuste del contenedor para no ser demasiado ancho en pantallas grandes */
+.container-fluid {
+    max-width: 1400px;
+}
+
+/* Tarjetas de métricas */
+.card-metric {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+}
+.card-metric:hover {
+    transform: translateY(-2px);
+}
+.card-metric .card-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Ajustes para la sección de Agrupaciones */
+.card-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+.table thead th {
+    background-color: #e9ecef;
+}
+
+/* Ajustes para los títulos principales */
+.display-5 {
+    font-size: 2rem;
+    font-weight: 300;
+}
+
+/* Ajuste para las tarjetas de gráficos */
+.card.shadow-sm {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.card.shadow-sm:hover {
+    transform: translateY(-2px);
+    transition: 0.2s;
+}

@@ -1,21 +1,26 @@
-from flask import Flask
-from etl_process import run_etl, DB_NAME
-
 import os
 import sqlite3
 import pandas as pd
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from flask import Flask, render_template, request, redirect, url_for
+from etl_process import run_etl, DB_NAME
 
 app = Flask(__name__)
 
 
-
+# Inicialización ETL
 if not os.path.exists(DB_NAME):
     run_etl("datos.json")
 
-# Retorna la información de tickets y contactos.
+
 def get_full_tickets_df():
+    """
+    Retorna un DataFrame con la información de tickets + contactos.
+    """
     conn = sqlite3.connect(DB_NAME)
     query = """
         SELECT 
@@ -42,6 +47,20 @@ def get_full_tickets_df():
     df['tiempo'] = df['tiempo'].fillna(0).astype(float)
     return df
 
+def get_empleados_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_emp, nombre, nivel FROM empleado", conn)
+    conn.close()
+    return df
+
+def get_clientes_df():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
+    conn.close()
+    return df
+
+
+# Cálculo de métricas generales
 def calculate_metrics():
     df = get_full_tickets_df()
 
@@ -96,23 +115,10 @@ def calculate_metrics():
 
     return metrics
 
-def get_empleados_df():
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id_emp, nombre, nivel FROM empleado", conn)
-    conn.close()
-    return df
-
-def get_clientes_df():
-    conn = sqlite3.connect(DB_NAME)
-    df = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn)
-    conn.close()
-    return df
-
-# 4. Agrupaciones Fraude
+# Agrupaciones Fraude
 def calculate_fraude_groupings():
     """
-    Filtra los incidentes de tipo_incidencia = 5 (Fraude) y
-    agrupa por:
+    Filtra los incidentes de tipo_incidencia = 5 y agrupa por:
       - Empleado
       - Nivel de empleado
       - Cliente
@@ -142,7 +148,7 @@ def calculate_fraude_groupings():
     emp_df = get_empleados_df()[['id_emp','nivel','nombre']]
     df_fraude = df_fraude.merge(emp_df, on='id_emp', how='left')
 
-    # 1) Por Empleado (id_emp)
+    # Por Empleado (id_emp)
     by_employee = do_fraude_stats_by_dimension(df_fraude, 'id_emp')
     # Mapeamos el ID a su nombre
     emp_dict = dict(zip(emp_df['id_emp'], emp_df['nombre']))
@@ -150,11 +156,11 @@ def calculate_fraude_groupings():
         emp_id = row['group_value']
         row['group_value'] = emp_dict.get(emp_id, f"Emp {emp_id}")
 
-    # 2) Por Nivel
+    # Por Nivel
     by_level = do_fraude_stats_by_dimension(df_fraude, 'nivel')
     # (El 'group_value' ya es 1,2,3, no hace falta mapear)
 
-    # 3) Por Cliente
+    # Por Cliente
     by_client = do_fraude_stats_by_dimension(df_fraude, 'id_cliente')
     # Mapeamos ID cliente -> nombre
     cli_df = get_clientes_df()
@@ -163,9 +169,8 @@ def calculate_fraude_groupings():
         cid = row['group_value']
         row['group_value'] = cli_dict.get(cid, f"Cliente {cid}")
 
-    # 4) Por día de la semana
+    # Por día de la semana
     by_weekday = do_fraude_stats_by_dimension(df_fraude, 'weekday')
-    # No hace falta mapear, 'weekday' ya es un string
 
     return {
         'by_employee': by_employee,
@@ -175,15 +180,7 @@ def calculate_fraude_groupings():
     }
 
 def do_fraude_stats_by_dimension(df_fraude, group_col):
-    """
-    Agrupa df_fraude por [group_col, id_ticket], calcula cuántos contactos
-    hay en cada ticket. Luego, para cada valor en group_col, se obtienen:
-      - num_incidents: nº de tickets
-      - total_contacts: suma total de contactos
-      - median_contacts, mean_contacts, var_contacts, min_contacts, max_contacts
-        (sobre la distribución de "contactos por ticket")
-    Retorna una lista de dict con dichas estadísticas.
-    """
+
     # Agrupamos por [group_col, id_ticket] y contamos filas => # contactos
     grouped = df_fraude.groupby([group_col, 'id_ticket']).size().reset_index(name='num_contacts')
 
@@ -212,7 +209,7 @@ def do_fraude_stats_by_dimension(df_fraude, group_col):
     return results
 
 
-# 5. Generar gráficos
+# Generar gráficos
 def generate_charts():
     df = get_full_tickets_df()
     total_time_by_ticket = df.groupby('id_ticket')['tiempo'].sum().reset_index(name='total_tiempo')
@@ -315,11 +312,168 @@ def generate_charts():
     }
 
 
-
+# Rutas Flask
 @app.route('/')
-def hello_world():  # put application's code here
-    return 'Hello World!'
+def index():
+    metrics = calculate_metrics()
+    charts = generate_charts()
 
+    # NUEVO: cálculo de agrupaciones para Fraude
+    fraude_groupings = calculate_fraude_groupings()
+
+    return render_template('index.html',
+                           metrics=metrics,
+                           charts=charts,
+                           fraude_groupings=fraude_groupings)
+
+@app.route('/add_incidente', methods=['GET','POST'])
+def add_incidente():
+    if request.method == 'POST':
+        # Recogemos datos del incidente
+        cliente = request.form.get('cliente')
+        fecha_apertura = request.form.get('fecha_apertura')
+        fecha_cierre   = request.form.get('fecha_cierre')
+        es_mant = 1 if request.form.get('es_mantenimiento') == 'true' else 0
+        satisfaccion = int(request.form.get('satisfaccion_cliente'))
+        tipo_inci = request.form.get('tipo_incidencia')
+
+        # Recogemos datos del contacto
+        id_emp = request.form.get('id_emp')
+        fecha_contacto = request.form.get('fecha_contacto')
+        tiempo_contacto = float(request.form.get('tiempo_contacto', 0))
+
+        # Insertar en la BD
+        conn = sqlite3.connect(DB_NAME)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO incidencia_ticket
+            (fecha_apertura, fecha_cierre, es_mantenimiento, satisfaccion_cliente, id_inci, id_cliente)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (fecha_apertura, fecha_cierre, es_mant, satisfaccion, tipo_inci, cliente))
+        id_ticket = cur.lastrowid
+
+        # Insertar contacto
+        cur.execute("""
+            INSERT INTO contacto (id_ticket, id_emp, fecha, tiempo)
+            VALUES (?, ?, ?, ?)
+        """, (id_ticket, id_emp, fecha_contacto, tiempo_contacto))
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('index'))
+
+    else:
+        conn = sqlite3.connect(DB_NAME)
+        clientes = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn).to_dict('records')
+        tipos = pd.read_sql_query("SELECT id_inci, nombre FROM tipo_incidencia", conn).to_dict('records')
+        empleados = pd.read_sql_query("SELECT id_emp, nombre FROM empleado", conn).to_dict('records')
+        conn.close()
+
+        return render_template('add_incidente.html',
+                               clientes=clientes,
+                               tipos_incidentes=tipos,
+                               empleados=empleados)
+
+#PRACTICA 2
+@app.route('/top_clientes/<int:x>')
+def top_clientes(x):
+
+    df = get_full_tickets_df()
+
+    # Agrupar por cliente y contar incidencias
+    client_incidents = df.groupby('id_cliente').size().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de clientes
+    clients_df = get_clientes_df()
+    client_dict = dict(zip(clients_df['id_cliente'], clients_df['nombre']))
+    client_incidents.index = client_incidents.index.map(lambda x: client_dict.get(x, f"Cliente {x}"))
+
+    # Convertir a lista de diccionarios para la plantilla
+    top_clients_list = [
+        {'nombre': client_name, 'incidencias': int(count)}
+        for client_name, count in client_incidents.items()
+    ]
+
+    return render_template('top_clientes.html',
+                           top_clientes=top_clients_list,
+                           x=x)
+
+
+@app.route('/top_tiempos_incidencias/<int:x>')
+def top_tiempos_incidencias(x):
+
+    df = get_full_tickets_df()
+
+    # Calcular el tiempo promedio de resolución por tipo de incidencia
+    incident_times = df.groupby('id_inci')['duracion'].mean().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de tipos de incidencias
+    conn = sqlite3.connect(DB_NAME)
+    incident_types = pd.read_sql_query("SELECT id_inci, nombre FROM tipo_incidencia", conn)
+    conn.close()
+    incident_dict = dict(zip(incident_types['id_inci'], incident_types['nombre']))
+    incident_times.index = incident_times.index.map(lambda x: incident_dict.get(x, f"Tipo {x}"))
+
+    # Convertir a lista de diccionarios para la plantilla
+    top_incidents_list = [
+        {'tipo': incident_name, 'dias_promedio': round(time, 2)}
+        for incident_name, time in incident_times.items()
+    ]
+
+    return render_template('top_tiempos_incidencias.html',
+                           top_incidencias=top_incidents_list,
+                           x=x)
+
+
+@app.route('/top_reportes/<int:x>', defaults={'mostrar_empleados': 'no'})
+@app.route('/top_reportes/<int:x>/<mostrar_empleados>')
+def top_reportes(x, mostrar_empleados):
+    """
+    Muestra el top X de clientes con más incidencias reportadas y, opcionalmente,
+    el top X de empleados con más tiempo empleado en resolución de incidencias
+    """
+    df = get_full_tickets_df()
+
+    # --- Top X Clientes con más incidencias ---
+    # Agrupar por cliente y contar incidencias
+    client_incidents = df.groupby('id_cliente').size().sort_values(ascending=False).head(x)
+
+    # Obtener nombres de clientes
+    clients_df = get_clientes_df()
+    client_dict = dict(zip(clients_df['id_cliente'], clients_df['nombre']))
+    client_incidents.index = client_incidents.index.map(lambda x: client_dict.get(x, f"Cliente {x}"))
+
+    # Convertir a lista de diccionarios
+    top_clientes_list = [
+        {'nombre': client_name, 'incidencias': int(count)}
+        for client_name, count in client_incidents.items()
+    ]
+
+    # --- Top X Empleados con más tiempo (si se solicita) ---
+    top_empleados_list = None
+    if mostrar_empleados.lower() == 'si':
+        # Agrupar por empleado y sumar el tiempo total empleado (horas)
+        employee_times = df.groupby('id_empl')['horas'].sum().sort_values(ascending=False).head(x)
+
+        # Obtener nombres de empleados
+        conn = sqlite3.connect(DB_NAME)
+        employees_df = pd.read_sql_query("SELECT id_empl, nombre FROM empleados", conn)
+        conn.close()
+        employee_dict = dict(zip(employees_df['id_empl'], employees_df['nombre']))
+        employee_times.index = employee_times.index.map(lambda x: employee_dict.get(x, f"Empleado {x}"))
+
+        # Convertir a lista de diccionarios
+        top_empleados_list = [
+            {'nombre': emp_name, 'horas': round(hours, 2)}
+            for emp_name, hours in employee_times.items()
+        ]
+
+    return render_template('top_reportes.html',
+                           top_clientes=top_clientes_list,
+                           top_empleados=top_empleados_list,
+                           x=x,
+                           mostrar_empleados=(mostrar_empleados.lower() == 'si'))
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

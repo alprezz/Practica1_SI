@@ -1,10 +1,370 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="utf-8">
+    <title>Dashboard de Incidentes</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
 
+<!-- Barra de navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Dashboard de Incidentes</a>
+    <div class="ml-auto mr-3">
+        <a href="{{ url_for('add_incidente') }}" class="btn btn-primary mr-2">
+            <i class="fas fa-plus-circle"></i> Añadir Incidente
+        </a>
+        <a href="{{ url_for('top_reportes', x=5) }}" class="btn btn-info mr-2">
+            Top 5 Reportes
+        </a>
+    </div>
+</nav>
+
+<div class="container-fluid my-4">
+    <div class="row">
+        <div class="col">
+            <h1 class="display-5">Vista general de métricas y gráficos</h1>
+            <p class="text-muted">Análisis de incidencias, horas y actuaciones</p>
+        </div>
+    </div>
+
+    <!-- MÉTRICAS en tarjetas (cards) -->
+    <div class="row">
+        <!-- Card: Incidencias Totales -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-bug"></i> Incidencias Totales
+                    </h5>
+                    <p class="display-4 mb-0">{{ metrics.total_tickets }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Satisfacción ≥ 5 (media) -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-smile"></i> Satisf. ≥ 5 (media)
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incidents_satisfied_mean }}
+                        <small class="text-muted">± {{ metrics.incidents_satisfied_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Incidencias/cliente -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-users"></i> Incidencias/cliente
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incidents_per_client_mean }}
+                        <small class="text-muted">± {{ metrics.incidents_per_client_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Tiempo total (hrs) -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-clock"></i> Tiempo total (hrs)
+                    </h5>
+                    <p class="h4 mb-0">
+                        {{ metrics.incident_total_time_mean }}
+                        <small class="text-muted">± {{ metrics.incident_total_time_std }}</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda fila de tarjetas -->
+    <div class="row">
+        <!-- Card: Horas Empleados -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-user-cog"></i> Horas Empleados
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.employee_time_min }}</p>
+                    <p class="mb-0">Max: {{ metrics.employee_time_max }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Duración Incidencias -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-hourglass-half"></i> Duración Incidencias
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.resolution_time_min }} días</p>
+                    <p class="mb-0">Max: {{ metrics.resolution_time_max }} días</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Inc. por empleado -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-people-carry"></i> Inc. por empleado
+                    </h5>
+                    <p class="mb-1">Min: {{ metrics.employee_incidents_min }}</p>
+                    <p class="mb-0">Max: {{ metrics.employee_incidents_max }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Fraude -->
+        <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+            <div class="card card-metric">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">
+                        <i class="fas fa-exclamation-triangle"></i> Fraude
+                    </h5>
+                    <p class="mb-1">Incidencias: {{ metrics.fraude_ticket_count }}</p>
+                    <p class="mb-1">Media acts: {{ metrics.fraude_contacts_mean }}</p>
+                    <p class="mb-1">Mediana: {{ metrics.fraude_contacts_median }}</p>
+                    <p class="mb-1">Var: {{ metrics.fraude_contacts_var }}</p>
+                    <p class="mb-0">Mín: {{ metrics.fraude_contacts_min }}, Máx: {{ metrics.fraude_contacts_max }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mt-5">Fraude - Análisis por Agrupaciones</h2>
+    <p>Mostramos las estadísticas de los incidentes de tipo Fraude (id_inci = 5), agrupados por empleado, nivel, cliente y día de la semana.</p>
+
+    <!-- Por Empleado -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Empleado</h5>
+            {% if fraude_groupings.by_employee %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Empleado</th>
+                    <th>Incidentes</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_employee %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No se han registrado incidentes de Fraude.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Nivel de empleado -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Nivel de Empleado</h5>
+            {% if fraude_groupings.by_level %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Nivel</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_level %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por nivel.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Cliente -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Cliente</h5>
+            {% if fraude_groupings.by_client %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_client %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por cliente.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Por Día de la semana -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Por Día de la Semana</h5>
+            {% if fraude_groupings.by_weekday %}
+            <table class="table table-sm table-bordered">
+                <thead>
+                <tr>
+                    <th>Día</th>
+                    <th>Incidentes</th>
+                    <th>Total Contactos</th>
+                    <th>Mediana</th>
+                    <th>Media</th>
+                    <th>Varianza</th>
+                    <th>Mín</th>
+                    <th>Máx</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in fraude_groupings.by_weekday %}
+                <tr>
+                    <td>{{ row.group_value }}</td>
+                    <td>{{ row.num_incidents }}</td>
+                    <td>{{ row.total_contacts }}</td>
+                    <td>{{ row.median_contacts }}</td>
+                    <td>{{ row.mean_contacts }}</td>
+                    <td>{{ row.var_contacts }}</td>
+                    <td>{{ row.min_contacts }}</td>
+                    <td>{{ row.max_contacts }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No hay registros de Fraude por día de la semana.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <h2 class="mt-5">Gráficos</h2>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">Gráfico 1</h5>
+                    <img src="{{ url_for('static', filename=charts.chart1) }}?v={{ metrics.total_tickets }}"
+                         class="img-fluid" alt="Gráfico 1">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">Gráfico 2</h5>
+                    <img src="{{ url_for('static', filename=charts.chart2) }}?v={{ metrics.total_tickets }}"
+                         class="img-fluid" alt="Gráfico 2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">Gráfico 3</h5>
+                    <img src="{{ url_for('static', filename=charts.chart3) }}?v={{ metrics.total_tickets }}"
+                         class="img-fluid" alt="Gráfico 3">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">Gráfico 4</h5>
+                    <img src="{{ url_for('static', filename=charts.chart4) }}?v={{ metrics.total_tickets }}"
+                         class="img-fluid" alt="Gráfico 4">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-secondary">Gráfico 5</h5>
+                    <img src="{{ url_for('static', filename=charts.chart5) }}?v={{ metrics.total_tickets }}"
+                         class="img-fluid" alt="Gráfico 5">
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'928e93ed0df5bd0a',t:'MTc0MzQxMDgwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

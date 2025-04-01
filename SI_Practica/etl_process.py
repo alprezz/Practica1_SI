@@ -11,14 +11,11 @@ def run_etl(json_file_path: str = "datos.json"):
     """
     Ejecuta el proceso ETL para cargar datos desde 'datos.json' a la BD SQLite 'incidentes.db'.
     """
-    # 1. Conexión a la base de datos
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    # 2. Crear tablas (si no existen)
     create_tables(conn)
 
-    # 3. Leer el archivo JSON
     with open(json_file_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
@@ -38,21 +35,16 @@ def run_etl(json_file_path: str = "datos.json"):
         ticket["fecha_cierre"] = fecha_cierre.strftime("%Y-%m-%d")
     # ======================================
 
-    # 4. Cargar datos en las tablas
     load_tipos_incidencia(data, conn)
     load_clientes(data, conn)
     load_empleados(data, conn)
     load_incidentes_y_contactos(data, conn)
 
-    # 5. Cerrar la conexión
     conn.close()
     print("Proceso ETL finalizado con éxito.")
 
 
 def create_tables(conn):
-    """
-    Crea las tablas en la base de datos, si no existen ya.
-    """
     cursor = conn.cursor()
 
     # Tabla tipo_incidencia
@@ -116,9 +108,6 @@ def create_tables(conn):
 
 
 def load_tipos_incidencia(data, conn):
-    """
-    Carga los tipos de incidencia desde data['tipos_incidentes'] a la tabla 'tipo_incidencia'.
-    """
     cursor = conn.cursor()
     tipos = data.get("tipos_incidentes", [])
     for tipo in tipos:
@@ -135,9 +124,6 @@ def load_tipos_incidencia(data, conn):
 
 
 def load_clientes(data, conn):
-    """
-    Carga los clientes desde data['clientes'] a la tabla 'cliente'.
-    """
     cursor = conn.cursor()
     clientes = data.get("clientes", [])
     for cli in clientes:
@@ -156,9 +142,6 @@ def load_clientes(data, conn):
 
 
 def load_empleados(data, conn):
-    """
-    Carga los empleados desde data['empleados'] a la tabla 'empleado'.
-    """
     cursor = conn.cursor()
     empleados = data.get("empleados", [])
     for emp in empleados:
@@ -177,10 +160,6 @@ def load_empleados(data, conn):
 
 
 def load_incidentes_y_contactos(data, conn):
-    """
-    Carga los incidentes/tickets (y sus contactos asociados) desde data['tickets_emitidos']
-    a la tabla 'incidencia_ticket' y 'contacto'.
-    """
     cursor = conn.cursor()
     tickets = data.get("tickets_emitidos", [])
 
@@ -219,6 +198,5 @@ def load_incidentes_y_contactos(data, conn):
     print(f"Se han insertado {len(tickets)} tickets y sus contactos.")
 
 
-# Punto de entrada (ejemplo):
 if __name__ == "__main__":
     run_etl("datos.json")

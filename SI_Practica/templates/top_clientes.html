@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Top {{ x }} Clientes por Incidencias</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Top {{ x }} Clientes con Más Incidencias</h1>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nombre del Cliente</th>
+                    <th>Número de Incidencias</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in top_clientes %}
+                <tr>
+                    <td>{{ cliente.nombre }}</td>
+                    <td>{{ cliente.incidencias }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Volver al Panel Principal</a>
+    </div>
+</body>
+</html>
