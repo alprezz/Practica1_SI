@@ -453,14 +453,12 @@ def top_reportes(x, mostrar_empleados):
     # --- Top X Empleados con más tiempo (si se solicita) ---
     top_empleados_list = None
     if mostrar_empleados.lower() == 'si':
-        # Agrupar por empleado y sumar el tiempo total empleado (horas)
-        employee_times = df.groupby('id_empl')['horas'].sum().sort_values(ascending=False).head(x)
+        # Agrupar por empleado y sumar el tiempo total empleado (en horas)
+        employee_times = df.groupby('id_emp')['tiempo'].sum().sort_values(ascending=False).head(x)
 
         # Obtener nombres de empleados
-        conn = sqlite3.connect(DB_NAME)
-        employees_df = pd.read_sql_query("SELECT id_empl, nombre FROM empleados", conn)
-        conn.close()
-        employee_dict = dict(zip(employees_df['id_empl'], employees_df['nombre']))
+        empleados_df = get_empleados_df()
+        employee_dict = dict(zip(empleados_df['id_emp'], empleados_df['nombre']))
         employee_times.index = employee_times.index.map(lambda x: employee_dict.get(x, f"Empleado {x}"))
 
         # Convertir a lista de diccionarios
@@ -474,6 +472,5 @@ def top_reportes(x, mostrar_empleados):
                            top_empleados=top_empleados_list,
                            x=x,
                            mostrar_empleados=(mostrar_empleados.lower() == 'si'))
-
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,66 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Top {{ x }} Reportes</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Enlace a un archivo CSS para los estilos -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <div class="container mt-4">
-        <!-- Tabla de Clientes -->
-        <h1>Top {{ x }} Clientes con Más Incidencias</h1>
-        <table class="table table-striped mb-5">
-            <thead>
-                <tr>
-                    <th>Nombre del Cliente</th>
-                    <th>Número de Incidencias</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cliente in top_clientes %}
-                <tr>
-                    <td>{{ cliente.nombre }}</td>
-                    <td>{{ cliente.incidencias }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Encabezado -->
+    <header class="dashboard-header">
+        <h1>Dashboard de Incidentes</h1>
+        <div class="header-buttons">
+            <a href="{{ url_for('add_incidente') }}" class="btn btn-primary">Añadir Incidente</a>
+            <a href="{{ url_for('top_reportes', x=5) }}" class="btn btn-secondary">Top 5 Reportes</a>
+        </div>
+    </header>
 
-        <!-- Tabla de Empleados (si se solicita) -->
-        {% if mostrar_empleados %}
-        <h1>Top {{ x }} Empleados con Más Tiempo Empleado</h1>
-        <table class="table table-striped mb-5">
-            <thead>
-                <tr>
-                    <th>Nombre del Empleado</th>
-                    <th>Horas Empleadas</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for empleado in top_empleados %}
-                <tr>
-                    <td>{{ empleado.nombre }}</td>
-                    <td>{{ empleado.horas }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Contenido principal -->
+    <main class="container">
+        <h2>Top {{ x }} Clientes con Más Incidencias</h2>
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Cliente</th>
+                        <th>Número de Incidencias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in top_clientes %}
+                    <tr>
+                        <td>{{ cliente.nombre }}</td>
+                        <td>{{ cliente.incidencias }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sección de empleados (si se muestra) -->
+        {% if mostrar_empleados and top_empleados %}
+        <h2>Top {{ x }} Empleados con Más Tiempo de Resolución</h2>
+        <div class="card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre del Empleado</th>
+                        <th>Tiempo Total (horas)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empleado in top_empleados %}
+                    <tr>
+                        <td>{{ empleado.nombre }}</td>
+                        <td>{{ empleado.horas }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
 
-        <!-- Botones de navegación -->
-        <div class="mb-3">
-            <a href="{{ url_for('index') }}" class="btn btn-primary mr-2">Volver al Panel Principal</a>
-            {% if not mostrar_empleados %}
-            <a href="{{ url_for('top_reportes', x=x, mostrar_empleados='si') }}" class="btn btn-info">
-                Mostrar Empleados
+        <!-- Botones de acción -->
+        <div class="action-buttons">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Volver al Panel Principal</a>
+            <a href="{{ url_for('top_reportes', x=x, mostrar_empleados='si' if not mostrar_empleados else 'no') }}" class="btn btn-secondary">
+                {{ "Mostrar Empleados" if not mostrar_empleados else "Ocultar Empleados" }}
             </a>
-            {% else %}
-            <a href="{{ url_for('top_reportes', x=x, mostrar_empleados='no') }}" class="btn btn-info">
-                Ocultar Empleados
-            </a>
-            {% endif %}
         </div>
-    </div>
+    </main>
 </body>
 </html>
