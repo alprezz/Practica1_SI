@@ -4,68 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Top {{ x }} Reportes</title>
-    <!-- Enlace a un archivo CSS para los estilos -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <!-- Encabezado -->
-    <header class="dashboard-header">
-        <h1>Dashboard de Incidentes</h1>
-        <div class="header-buttons">
-            <a href="{{ url_for('add_incidente') }}" class="btn btn-primary">Añadir Incidente</a>
-            <a href="{{ url_for('top_reportes', x=5) }}" class="btn btn-secondary">Top 5 Reportes</a>
+    <header class="bg-dark text-white py-3">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Dashboard de Incidentes</h1>
+                <div>
+                    <a href="{{ url_for('add_incidente') }}" class="btn btn-primary mr-2">
+                        <i class="fas fa-plus"></i> Añadir Incidente
+                    </a>
+                    <a href="{{ url_for('top_reportes', x=5) }}" class="btn btn-info">
+                        <i class="fas fa-chart-bar"></i> Top 5 Reportes
+                    </a>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Contenido principal -->
-    <main class="container">
-        <h2>Top {{ x }} Clientes con Más Incidencias</h2>
-        <div class="card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Nombre del Cliente</th>
-                        <th>Número de Incidencias</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cliente in top_clientes %}
-                    <tr>
-                        <td>{{ cliente.nombre }}</td>
-                        <td>{{ cliente.incidencias }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <main class="container-fluid py-4">
+        <!-- Título -->
+        <h2 class="display-5 mb-4">Top {{ x }} Clientes con Más Incidencias</h2>
+
+        <!-- Tabla de clientes -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Cliente</th>
+                            <th>Número de Incidencias</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in top_clientes %}
+                        <tr>
+                            <td>{{ cliente.nombre }}</td>
+                            <td>{{ cliente.incidencias }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Sección de empleados (si se muestra) -->
+        <!-- Tabla de empleados (si se muestra) -->
         {% if mostrar_empleados and top_empleados %}
-        <h2>Top {{ x }} Empleados con Más Tiempo de Resolución</h2>
-        <div class="card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Nombre del Empleado</th>
-                        <th>Tiempo Total (horas)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for empleado in top_empleados %}
-                    <tr>
-                        <td>{{ empleado.nombre }}</td>
-                        <td>{{ empleado.horas }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <h2 class="display-5 mb-4">Top {{ x }} Empleados con Más Tiempo de Resolución</h2>
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre del Empleado</th>
+                            <th>Tiempo Total (horas)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for empleado in top_empleados %}
+                        <tr>
+                            <td>{{ empleado.nombre }}</td>
+                            <td>{{ empleado.horas }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         {% endif %}
 
         <!-- Botones de acción -->
-        <div class="action-buttons">
-            <a href="{{ url_for('index') }}" class="btn btn-primary">Volver al Panel Principal</a>
-            <a href="{{ url_for('top_reportes', x=x, mostrar_empleados='si' if not mostrar_empleados else 'no') }}" class="btn btn-secondary">
+        <div class="d-flex justify-content-start">
+            <a href="{{ url_for('index') }}" class="btn btn-primary mr-2">
+                <i class="fas fa-arrow-left"></i> Volver al Panel Principal
+            </a>
+            <a href="{{ url_for('top_reportes', x=x, mostrar_empleados='si' if not mostrar_empleados else 'no') }}" class="btn btn-info">
+                <i class="fas fa-{{ 'eye' if not mostrar_empleados else 'eye-slash' }}"></i>
                 {{ "Mostrar Empleados" if not mostrar_empleados else "Ocultar Empleados" }}
             </a>
         </div>
