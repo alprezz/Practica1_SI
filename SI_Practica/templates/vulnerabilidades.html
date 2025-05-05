@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Últimas Vulnerabilidades</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Últimas 10 Vulnerabilidades</h1>
+    {% if error_message %}
+        <p style="color: red;">{{ error_message }}</p>
+    {% else %}
+        <div class="card-report">
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>CVE ID</th>
+                            <th>Resumen</th>
+                            <th>Fecha Publicación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vuln in vulnerabilidades %}
+                        <tr>
+                            <td>{{ vuln.cve_id }}</td>
+                            <td>{{ vuln.summary }}</td>
+                            <td>{{ vuln.published }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    <div class="action-buttons">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Volver al Panel Principal</a>
+    </div>
+</div>
+</body>
+</html>
