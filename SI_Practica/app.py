@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 # Inicialización ETL
 if not os.path.exists(DB_NAME):
-    run_etl("datos.json")
+    run_etl("../../Si_P2Grok/datos.json")
 
 
 def get_full_tickets_df():

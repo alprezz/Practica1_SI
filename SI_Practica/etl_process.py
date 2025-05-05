@@ -199,4 +199,4 @@ def load_incidentes_y_contactos(data, conn):
 
 
 if __name__ == "__main__":
-    run_etl("datos.json")
+    run_etl("../../Si_P2Grok/datos.json")
