@@ -1,14 +1,21 @@
 import os
 import sqlite3
 import pandas as pd
-
+from datetime import datetime
 import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import io
 
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, send_file
 from etl_process import run_etl, DB_NAME
+from reportlab.lib.units import cm
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 
+
+matplotlib.use("Agg")
 app = Flask(__name__)
 
 
@@ -240,7 +247,7 @@ def generate_charts():
         box_data.append(df_tipo['duracion'].values)
         labels.append(str(tipo))
     plt.figure()
-    plt.boxplot(box_data, whis=[5, 90], labels=labels)
+    plt.boxplot(box_data, whis=[5, 90], tick_labels=labels)  # Changed 'labels' to 'tick_labels'
     plt.title('Boxplot tiempos de resolución (por tipo_incidencia)')
     plt.xlabel('Tipo de Incidencia')
     plt.ylabel('Duración (días)')
@@ -376,7 +383,7 @@ def add_incidente():
                                empleados=empleados)
 
 #PRACTICA 2
-@app.route('/top_clientes/<int:x>')
+@app.route('/top_clientes/<int:x>', defaults={'x': 5})
 def top_clientes(x):
 
     df = get_full_tickets_df()
@@ -400,7 +407,7 @@ def top_clientes(x):
                            x=x)
 
 
-@app.route('/top_tiempos_incidencias/<int:x>')
+@app.route('/top_tiempos_incidencias/<int:x>', defaults={'x': 5})
 def top_tiempos_incidencias(x):
 
     df = get_full_tickets_df()
@@ -472,6 +479,117 @@ def top_reportes(x, mostrar_empleados):
                            top_empleados=top_empleados_list,
                            x=x,
                            mostrar_empleados=(mostrar_empleados.lower() == 'si'))
+
+
+
+
+
+def header_footer(canvas, doc):
+    # Header: logo y título pequeño
+    logo_path = os.path.join('static', 'logo.png')
+    if os.path.exists(logo_path):
+        canvas.drawImage(logo_path, x=2*cm, y=A4[1]-3*cm, width=3*cm, height=1*cm, preserveAspectRatio=True)
+    canvas.setFont('Helvetica-Bold', 12)
+    canvas.setFillColor(colors.HexColor('#2E4053'))
+    canvas.drawString(6*cm, A4[1]-2.5*cm, "Informe de Incidencias - URJC - Sistemas de Información")
+
+    # Footer: página y fecha
+    canvas.setFont('Helvetica', 9)
+    canvas.setFillColor(colors.grey)
+    page_num = f"Página {doc.page}"
+    canvas.drawRightString(A4[0]-2*cm, 1.5*cm, page_num)
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    canvas.drawString(2*cm, 1.5*cm, f"Generado el {fecha}")
+
+@app.route('/generate_report')
+def generate_report():
+    metrics = calculate_metrics()
+    charts = generate_charts()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=2*cm, leftMargin=2*cm,
+                            topMargin=4*cm, bottomMargin=3*cm)
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor('#1F618D'), spaceAfter=14)
+    subtitle_style = ParagraphStyle('subtitle', parent=styles['Heading2'], fontSize=14, textColor=colors.HexColor('#2874A6'), spaceAfter=12)
+    normal_style = styles['BodyText']
+
+    story = []
+
+    # Título principal
+    story.append(Paragraph("Informe de Incidencias", title_style))
+    story.append(Spacer(1, 12))
+
+    # Resumen breve (opcional)
+    story.append(Paragraph("Este informe presenta un análisis detallado de las incidencias registradas, con métricas clave y gráficos que facilitan la interpretación.", normal_style))
+    story.append(Spacer(1, 18))
+
+    # Tabla de métricas con zebra striping
+    data = [["Métrica", "Valor"]]
+    for key, value in metrics.items():
+        key_formatted = key.replace('_', ' ').capitalize()
+        data.append([key_formatted, str(value)])
+
+    table = Table(data, hAlign='LEFT', colWidths=[10*cm, 5*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2980B9')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        # Alternar color filas
+        ('BACKGROUND', (0, 1), (-1, -1), colors.whitesmoke),
+    ]))
+    # Zebra striping manual
+    for i in range(1, len(data)):
+        if i % 2 == 0:
+            table.setStyle(TableStyle([('BACKGROUND', (0, i), (-1, i), colors.lavender)]))
+
+    story.append(table)
+    story.append(Spacer(1, 24))
+
+    # Sección de gráficos en cuadrícula 2xN
+    story.append(Paragraph("Análisis Gráfico", subtitle_style))
+    story.append(Spacer(1, 12))
+
+    chart_items = list(charts.items())
+    for i in range(0, len(chart_items), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(chart_items):
+                chart_name, chart_file = chart_items[i + j]
+                img_path = os.path.join('static', chart_file)
+                if os.path.exists(img_path):
+                    img = Image(img_path, width=8*cm, height=6*cm)
+                    # Contenedor con título y gráfico
+                    block = [Paragraph(chart_name.replace('_', ' ').capitalize(), normal_style), Spacer(1,6), img]
+                    row.append(block)
+                else:
+                    row.append([Paragraph("Imagen no disponible", normal_style)])
+            else:
+                row.append('')  # Celda vacía si no hay par
+        # Crear tabla para la fila de gráficos
+        t = Table([row], colWidths=[8*cm, 8*cm])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 12))
+
+    # Construir PDF con header y footer
+    doc.build(story, onFirstPage=header_footer, onLaterPages=header_footer)
+
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name='informe_incidencias.pdf', mimetype='application/pdf')
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
