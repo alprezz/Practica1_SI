@@ -1,6 +1,5 @@
 import sqlite3
 import json
-import os
 import random
 from datetime import datetime, timedelta
 
