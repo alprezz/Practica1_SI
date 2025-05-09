@@ -5,8 +5,15 @@ from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 import io
+import joblib
+import logging
 
+import requests
 from flask import Flask, render_template, request, redirect, url_for, send_file
+from requests.adapters import HTTPAdapter
+from tenacity import wait_fixed, stop_after_attempt, retry_if_exception_type, retry
+from urllib3 import Retry
+
 from etl_process import run_etl, DB_NAME
 from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
@@ -14,14 +21,16 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 
-
 matplotlib.use("Agg")
 app = Flask(__name__)
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Inicialización ETL
 if not os.path.exists(DB_NAME):
-    run_etl("../../Si_P2Grok/datos.json")
+    run_etl("datos.json")
 
 
 def get_full_tickets_df():
@@ -131,8 +140,8 @@ def calculate_fraude_groupings():
       - Cliente
       - Día de la semana (fecha_contacto)
     Para cada grupo calcula:
-      - Nº de incidentes (tickets)
-      - Nº total de contactos
+      - N.º de incidentes (tickets)
+      - N.º total de contactos
       - Estadísticas (# contactos por ticket): mediana, media, varianza, min, max
     """
     df = get_full_tickets_df()
@@ -480,9 +489,191 @@ def top_reportes(x, mostrar_empleados):
                            x=x,
                            mostrar_empleados=(mostrar_empleados.lower() == 'si'))
 
+# Ejercicio 3
+MOCK_VULNERABILITIES = [
+    {
+        "cve_id": "CVE-2025-0001",
+        "summary": "Vulnerabilidad crítica en software X que permite ejecución remota de código debido a una validación insuficiente de entradas.",
+        "published": "2025-05-01",
+        "cvss": 9.8
+    },
+    {
+        "cve_id": "CVE-2025-0002",
+        "summary": "Fallo de seguridad en la autenticación de la aplicación Y, permite acceso no autorizado mediante bypass de credenciales.",
+        "published": "2025-05-02",
+        "cvss": 7.5
+    },
+    {
+        "cve_id": "CVE-2025-0003",
+        "summary": "Vulnerabilidad de inyección SQL en el sistema Z, afecta a versiones anteriores a 1.2.3, permitiendo acceso a datos sensibles.",
+        "published": "2025-05-03",
+        "cvss": 8.1
+    }
+]
+
+def format_date(date_str):
+    """
+    Formatea una fecha en formato ISO a YYYY-MM-DD.
+    """
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    except Exception:
+        return date_str or 'N/A'
+
+def extract_summary(notes):
+    """
+    Extrae el resumen de las notas del advisory.
+    """
+    for note in notes:
+        if note.get('category') == 'summary':
+            return note.get('text', 'Sin descripción')
+    return 'Sin descripción'
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_fixed(3),  # Mayor espera para respetar límites de la API
+    retry=retry_if_exception_type(requests.RequestException),
+    before_sleep=lambda retry_state: logger.info(f"Reintentando solicitud a la API (intento {retry_state.attempt_number}/5)...")
+)
+def fetch_vulnerabilities():
+    """
+    Obtiene las últimas vulnerabilidades de la API de CIRCL CVE con reintentos.
+    """
+    session = requests.Session()
+    retries = Retry(
+        total=5,
+        backoff_factor=1.5,
+        status_forcelist=[429, 500, 502, 503, 504],  # Reintentar en errores de servidor o rate limit
+    )
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    # Agregar User-Agent para evitar bloqueos
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+
+    response = session.get('https://cve.circl.lu/api/last', headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+@app.route('/vulnerabilidades')
+def vulnerabilidades():
+    """
+    Fetches the latest 10 CVE vulnerabilities from the CIRCL CVE API and renders them.
+    Falls back to mock data if the API fails.
+    """
+    logger.info("Fetching recent vulnerabilities from CIRCL CVE API...")
+    vuln_list = []
+    error_message = None
+    api_status = "Funcionando correctamente"
+
+    try:
+        advisories = fetch_vulnerabilities()
+
+        # Validar formato de respuesta
+        if not isinstance(advisories, list):
+            logger.error(f"Formato de respuesta inesperado: {type(advisories)}")
+            raise ValueError("La API no devolvió una lista de vulnerabilidades")
+
+        if not advisories:
+            logger.warning("API devolvió una lista vacía de vulnerabilidades")
+            raise ValueError("No se encontraron vulnerabilidades recientes")
+
+        logger.info(f"Obtenidas {len(advisories)} vulnerabilidades de la API")
+
+        # Procesar hasta 10 vulnerabilidades
+        for advisory in advisories:
+            if len(vuln_list) >= 10:
+                break
+
+            try:
+                # Extraer datos del advisory
+                notes = advisory.get("document", {}).get("notes", [])
+                cves = advisory.get("vulnerabilities", [])
+                summary = extract_summary(notes)
+                published = advisory.get("document", {}).get("tracking", {}).get("initial_release_date", "N/A")
+                published = format_date(published)
+
+                # Extraer CVSS si está disponible
+                cvss = None
+                cvss_data = advisory.get("impact", {}).get("cvss", {})
+                if cvss_data:
+                    cvss = cvss_data.get("severity", {}).get("score")
+
+                # Procesar cada CVE individual
+                for cve in cves:
+                    if len(vuln_list) >= 10:
+                        break
+
+                    try:
+                        cve_id = (cve.get("cve") or
+                                 cve.get("id") or
+                                 cve.get("CVE_data_meta", {}).get("ID") or
+                                 "CVE no especificado")
+
+                        vuln_list.append({
+                            "cve_id": cve_id,
+                            "summary": summary or "Descripción no disponible",
+                            "published": published,
+                            "cvss": cvss if cvss else "N/A"
+                        })
+
+                    except Exception as e:
+                        logger.warning(f"Error procesando CVE individual: {e}")
+                        continue
+
+            except Exception as e:
+                logger.warning(f"Error procesando advisory: {e}")
+                continue
+
+    except requests.HTTPError as e:
+        logger.error(f"Error HTTP al obtener datos de la API: {e.response.status_code} - {e.response.text}")
+        error_message = f"Error HTTP: {e.response.status_code} - {e.response.text}"
+        api_status = f"No disponible: {error_message}"
+        vuln_list = MOCK_VULNERABILITIES
+        logger.info("Usando datos de respaldo (mock data) debido a un error HTTP.")
+
+    except requests.RequestException as e:
+        logger.error(f"Error de red al obtener datos de la API: {str(e)}")
+        error_message = f"Error de red: {str(e)}"
+        api_status = f"No disponible: {error_message}"
+        vuln_list = MOCK_VULNERABILITIES
+        logger.info("Usando datos de respaldo (mock data) debido a un error de red.")
+
+    except ValueError as e:
+        logger.error(f"Error en formato de datos: {str(e)}")
+        error_message = f"Error en datos: {str(e)}"
+        api_status = f"No disponible: {error_message}"
+        vuln_list = MOCK_VULNERABILITIES
+        logger.info("Usando datos de respaldo (mock data) debido a un error de formato.")
+
+    except Exception as e:
+        logger.error(f"Error inesperado: {str(e)}")
+        error_message = f"Error inesperado: {str(e)}"
+        api_status = f"No disponible: {error_message}"
+        vuln_list = MOCK_VULNERABILITIES
+        logger.info("Usando datos de respaldo (mock data) debido a un error inesperado.")
+
+    # Si no se obtuvieron vulnerabilidades, usar mock data
+    if not vuln_list:
+        logger.warning("No se obtuvieron vulnerabilidades, usando datos de ejemplo.")
+        vuln_list = MOCK_VULNERABILITIES
+        if not error_message:
+            error_message = "No se encontraron vulnerabilidades recientes."
+            api_status = "No disponible: No se encontraron datos."
+
+    return render_template(
+        'vulnerabilidades.html',
+        vulnerabilidades=vuln_list,
+        error_message=error_message,
+        api_status=api_status,
+        last_update=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
 
 
 
+# Ejercicio 4
 
 def header_footer(canvas, doc):
     # Header: logo y título pequeño
@@ -593,4 +784,3 @@ def generate_report():
 if __name__ == '__main__':
     app.run(debug=True)
 
-    #prueba

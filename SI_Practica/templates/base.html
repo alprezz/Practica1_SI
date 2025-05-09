@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>{% block title %}CMI - Sistema de Información{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>Cuadro de Mando Integral - Sistema de Información</h1>
+        <hr>
+    </header>
+    <main>
+        {% block content %}
+        <!-- Aquí va el contenido de cada página -->
+        {% endblock %}
+    </main>
+    <footer>
+        <hr>
+        <p>© 2025 URJC</p>
+    </footer>
+</body>
+</html>

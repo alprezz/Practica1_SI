@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Predicción de Ticket Crítico</h2>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('prediccion') }}">
+                <div class="form-group">
+                    <label for="cliente">Cliente:</label>
+                    <select class="form-control" id="cliente" name="cliente" required>
+                        <option value="">Seleccione un cliente</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id_cliente }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_apertura">Fecha de Apertura:</label>
+                    <input type="date" class="form-control" id="fecha_apertura" name="fecha_apertura" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_cierre">Fecha de Cierre:</label>
+                    <input type="date" class="form-control" id="fecha_cierre" name="fecha_cierre" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Es Mantenimiento:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="es_mantenimiento" id="es_mantenimiento_si" value="true">
+                        <label class="form-check-label" for="es_mantenimiento_si">Sí</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="es_mantenimiento" id="es_mantenimiento_no" value="false" checked>
+                        <label class="form-check-label" for="es_mantenimiento_no">No</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="satisfaccion_cliente">Satisfacción del Cliente (1-10):</label>
+                    <input type="number" class="form-control" id="satisfaccion_cliente" name="satisfaccion_cliente" min="1" max="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipo_incidencia">Tipo de Incidencia:</label>
+                    <select class="form-control" id="tipo_incidencia" name="tipo_incidencia" required>
+                        <option value="">Seleccione un tipo</option>
+                        {% for tipo in tipos_incidentes %}
+                        <option value="{{ tipo.id_inci }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="modelo">Modelo de IA:</label>
+                    <select class="form-control" id="modelo" name="modelo" required>
+                        <option value="lr">Regresión Logística</option>
+                        <option value="dt">Árbol de Decisión</option>
+                        <option value="rf">Random Forest</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Predecir</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

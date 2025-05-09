@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Error en la predicción</h2>
+<div class="alert alert-danger">
+    {{ error }}
+</div>
+<a href="{{ url_for('predict_critical') }}" class="btn btn-primary">Intentar nuevamente</a>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Resultado de la Predicción</h2>
+
+    <div class="alert {% if resultado.es_critico == 'Sí' %}alert-danger{% else %}alert-success{% endif %}" role="alert">
+        <h4 class="alert-heading">
+            {% if resultado.es_critico == 'Sí' %}
+                ¡Se predice que este ticket será CRÍTICO!
+            {% else %}
+                Se predice que este ticket NO será crítico.
+            {% endif %}
+        </h4>
+        <p>Probabilidad de ser crítico: {{ resultado.probabilidad }}%</p>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Datos del Ticket</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Cliente:</strong> {{ resultado.cliente }}</p>
+                    <p><strong>Es Mantenimiento:</strong> {{ resultado.es_mantenimiento }}</p>
+                    <p><strong>Satisfacción Cliente:</strong> {{ resultado.satisfaccion_cliente }} / 10</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Tipo de Incidencia:</strong> {{ resultado.tipo_incidencia }}</p>
+                    <p><strong>Duración:</strong> {{ resultado.duracion }} días</p>
+                    <p><strong>Modelo Utilizado:</strong> {{ resultado.modelo }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3>Análisis Visual del Modelo: {{ resultado.modelo }}</h3>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Importancia de Características</div>
+                <div class="card-body">
+                    <img src="{{ url_for('static', filename=resultado.chart_feature) }}" alt="Importancia de Características" class="img-fluid">
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">Matriz de Confusión del Modelo</div>
+                <div class="card-body">
+                    <img src="{{ url_for('static', filename=resultado.chart_confusion) }}" alt="Matriz de Confusión" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if resultado.chart_tree is defined %}
+    <div class="card mb-4">
+        <div class="card-header">Visualización del Árbol de Decisión</div>
+        <div class="card-body">
+            <img src="{{ url_for('static', filename=resultado.chart_tree) }}" alt="Árbol de Decisión" class="img-fluid">
+        </div>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('prediccion') }}" class="btn btn-primary">Hacer otra predicción</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Volver al inicio</a>
+</div>
+{% endblock %}
+
