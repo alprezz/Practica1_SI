@@ -7,13 +7,11 @@ import matplotlib.pyplot as plt
 import io
 import joblib
 import logging
-
 import requests
 from flask import Flask, render_template, request, redirect, url_for, send_file
 from requests.adapters import HTTPAdapter
 from tenacity import wait_fixed, stop_after_attempt, retry_if_exception_type, retry
 from urllib3 import Retry
-
 from etl_process import run_etl, DB_NAME
 from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
@@ -778,7 +776,103 @@ def generate_report():
     buffer.seek(0)
     return send_file(buffer, as_attachment=True, download_name='informe_incidencias.pdf', mimetype='application/pdf')
 
+# Ejercicio 5
+# Añadir a app.py
 
+# Función para cargar los modelos
+def load_models():
+    try:
+        lr_model = joblib.load('models/logistic_regression_model.pkl')
+        dt_model = joblib.load('models/decision_tree_model.pkl')
+        rf_model = joblib.load('models/random_forest_model.pkl')
+        return {'lr': lr_model, 'dt': dt_model, 'rf': rf_model}
+    except Exception as e:
+        print(f"Error al cargar los modelos: {e}")
+        return None
+
+
+# Ruta para la página de predicción
+@app.route('/prediccion', methods=['GET', 'POST'])
+def prediccion():
+    models = load_models()
+
+    if not models:
+        return render_template('error.html', message="No se pudieron cargar los modelos de IA.")
+
+    if request.method == 'POST':
+        # Obtener datos del formulario
+        cliente = request.form.get('cliente')
+        fecha_apertura = request.form.get('fecha_apertura')
+        fecha_cierre = request.form.get('fecha_cierre')
+        es_mantenimiento = 1 if request.form.get('es_mantenimiento') == 'true' else 0
+        satisfaccion_cliente = int(request.form.get('satisfaccion_cliente'))
+        tipo_incidencia = int(request.form.get('tipo_incidencia'))
+        modelo_seleccionado = request.form.get('modelo')
+
+        # Calcular características
+        fecha_apertura_dt = datetime.strptime(fecha_apertura, '%Y-%m-%d')
+        fecha_cierre_dt = datetime.strptime(fecha_cierre, '%Y-%m-%d')
+        duracion = (fecha_cierre_dt - fecha_apertura_dt).days
+
+        # Crear DataFrame para predicción
+        data = {
+            'es_mantenimiento': [es_mantenimiento],
+            'satisfaccion_cliente': [satisfaccion_cliente],
+            'tipo_incidencia': [tipo_incidencia],
+            'duracion': [duracion],
+            'num_contactos': [1],  # Por defecto
+            'tiempo_total': [1.0]  # Por defecto
+        }
+        df = pd.DataFrame(data)
+
+        # Seleccionar modelo y hacer predicción
+        if modelo_seleccionado == 'lr':
+            model = models['lr']
+            model_name = "Regresión Logística"
+            chart_feature = 'lr_feature_importance.png'
+            chart_confusion = 'lr_confusion_matrix.png'
+        elif modelo_seleccionado == 'dt':
+            model = models['dt']
+            model_name = "Árbol de Decisión"
+            chart_feature = 'dt_feature_importance.png'
+            chart_confusion = 'dt_confusion_matrix.png'
+            chart_tree = 'decision_tree.png'
+        else:  # rf
+            model = models['rf']
+            model_name = "Random Forest"
+            chart_feature = 'rf_feature_importance.png'
+            chart_confusion = 'rf_confusion_matrix.png'
+
+        # Predicción
+        prediccion = model.predict(df)[0]
+        probabilidad = model.predict_proba(df)[0][1]  # Probabilidad de ser crítico
+
+        # Preparar resultados
+        resultado = {
+            'cliente': cliente,
+            'es_mantenimiento': 'Sí' if es_mantenimiento == 1 else 'No',
+            'satisfaccion_cliente': satisfaccion_cliente,
+            'tipo_incidencia': tipo_incidencia,
+            'duracion': duracion,
+            'modelo': model_name,
+            'es_critico': 'Sí' if prediccion == 1 else 'No',
+            'probabilidad': round(probabilidad * 100, 2),
+            'chart_feature': f'charts/{chart_feature}',
+            'chart_confusion': f'charts/{chart_confusion}'
+        }
+
+        if modelo_seleccionado == 'dt':
+            resultado['chart_tree'] = f'charts/{chart_tree}'
+
+        return render_template('resultado_prediccion.html', resultado=resultado)
+
+    # Para petición GET, mostrar formulario
+    conn = sqlite3.connect(DB_NAME)
+    clientes = pd.read_sql_query("SELECT id_cliente, nombre FROM cliente", conn).to_dict('records')
+    tipos = pd.read_sql_query("SELECT id_inci, nombre FROM tipo_incidencia", conn).to_dict('records')
+    conn.close()
+
+    return render_template('prediccion.html', clientes=clientes, tipos_incidentes=tipos)
 
 
 if __name__ == '__main__':
