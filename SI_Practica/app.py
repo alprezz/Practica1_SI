@@ -777,8 +777,6 @@ def generate_report():
     return send_file(buffer, as_attachment=True, download_name='informe_incidencias.pdf', mimetype='application/pdf')
 
 # Ejercicio 5
-# Añadir a app.py
-
 # Función para cargar los modelos
 def load_models():
     try:
