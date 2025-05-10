@@ -24,10 +24,11 @@
                     <tbody>
                         {% for vuln in vulnerabilidades %}
                         <tr>
-                            <td>{{ vuln.cve_id }}</td>
+                            <td>{{ vuln.cve }}</td>
                             <td>{{ vuln.summary }}</td>
                             <td>{{ vuln.published }}</td>
                         </tr>
+
                         {% endfor %}
                     </tbody>
                 </table>
